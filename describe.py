@@ -43,6 +43,19 @@ def my_max(x):
             ans = elem
     return ans
 
+def my_percentile(x, percent, key=lambda x:x):
+    x = sorted(x)
+    x = [x for x in x if not math.isnan(x)]
+    x = sorted(x)
+    needed_length = (len(x) - 1)* percent
+    floor = math.floor(needed_length)
+    ceil = math.ceil(needed_length)
+    if floor == ceil:
+        return key(x[int(needed_length)])
+    d0 = key(x[int(floor)]) * (ceil - needed_length)
+    d1 = key(x[int(ceil)]) * (needed_length - floor)
+    return d0 + d1
+
 
 if __name__ == '__main__':
     if len(argv) != 2:
@@ -50,7 +63,8 @@ if __name__ == '__main__':
         exit(1)
     df = pd.read_csv(argv[1])
     df = df.select_dtypes([np.number])
-    print('my', my_std(df['Potions']), '\n', 'their', np.std(df['Potions']))
+    df.dropna()
+    print('my', my_percentile(df['Potions'], 0.25), '\n', 'their', np.nanpercentile(df['Potions'], 25))
     '''
     for column in df:
         print(column)
