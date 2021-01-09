@@ -18,10 +18,13 @@ def my_mean(x):
 def my_std(x):
     m = my_mean(x)
     ans = 0
+    length = len(x)
     for elem in x:
-        ans += (elem - m)**2
-
-    ans /= len(x) - 1
+        if math.isnan(elem):
+            length -= 1
+        else:
+            ans += (elem - m)**2
+    ans /= length
     return np.sqrt(ans)
 
 
@@ -47,7 +50,7 @@ if __name__ == '__main__':
         exit(1)
     df = pd.read_csv(argv[1])
     df = df.select_dtypes([np.number])
-    print('my', my_mean(df['Potions']), '\n', 'their', np.mean(df['Potions']))
+    print('my', my_std(df['Potions']), '\n', 'their', np.std(df['Potions']))
     '''
     for column in df:
         print(column)
