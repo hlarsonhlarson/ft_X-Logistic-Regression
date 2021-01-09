@@ -57,16 +57,28 @@ def my_percentile(x, percent, key=lambda x:x):
     return d0 + d1
 
 
+def my_count(x):
+    count = len(x)
+    for elem in x:
+        if math.isnan(elem):
+            count -= 1
+    return count
+
 if __name__ == '__main__':
     if len(argv) != 2:
         print('Incorrect input. Usage: python3 computor.py "{your expression}"')
         exit(1)
     df = pd.read_csv(argv[1])
     df = df.select_dtypes([np.number])
-    df.dropna()
-    print('my', my_percentile(df['Potions'], 0.25), '\n', 'their', np.nanpercentile(df['Potions'], 25))
-    '''
-    for column in df:
-        print(column)
-        print('my', my_mean(df[column]), '\n', 'their', np.mean(df[column]))
-    '''
+    counts = [my_count(df[column]) for column in df]
+    means = [my_mean(df[column]) for column in df]
+    stds = [my_std(df[column]) for column in df]
+    mins = [my_mean(df[column]) for column in df]
+    pers_25 = [my_percentile(df[column], 0.25) for column in df]
+    pers_50 = [my_percentile(df[column], 0.50) for column in df]
+    pers_75 = [my_percentile(df[column], 0.75) for column in df]
+    maxes = [my_max(df[column]) for column in df]
+    column_names = [column for column in df]
+    all_raws = [counts, means, stds, mins, pers_25, pers_50, pers_75, maxes]
+    new_df = pd.DataFrame(all_raws, columns=column_names, index=('count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max'))
+    print(new_df)
