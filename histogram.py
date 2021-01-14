@@ -5,18 +5,6 @@ import matplotlib.patches as mpatches
 import numpy as np
 
 
-def create_legend():
-    c1 = mpatches.Circle((0.5, 0.5), 0.25, facecolor=colors[0], edgecolor=colors[0], linewidth=3)
-    c2 = mpatches.Circle((0.5, 0.5), 0.25, facecolor=colors[1], edgecolor=colors[1], linewidth=3)
-    c3 = mpatches.Circle((0.5, 0.5), 0.25, facecolor=colors[2], edgecolor=colors[2], linewidth=3)
-    c4 = mpatches.Circle((0.5, 0.5), 0.25, facecolor=colors[3], edgecolor=colors[3], linewidth=3)
-    plt.gca().add_patch(c1)
-    plt.gca().add_patch(c2)
-    plt.gca().add_patch(c3)
-    plt.gca().add_patch(c4)
-    return c1, c2, c3, c4
-
-
 if __name__ == '__main__':
     if len(argv) != 2:
         print('Incorrect input. Usage: python3 histogram.py "{your expression}"')
