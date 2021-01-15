@@ -85,12 +85,8 @@ class LogReg:
         self.b = np.mean(self.b - self.theta * np.mean(self.mean)/np.mean(self.std))
         self.theta = self.theta.tolist()
         self.theta = [float(x[0]) for x in self.theta]
-        print(self.theta)
-        self.b = self.b.tolist()
+        self.b = float(self.b.tolist())
         result = {'b': self.b, 'theta': self.theta}
-        print('HI')
-        print(type(self.theta), type(self.b))
-        print('HI')
         with open(os.path.join(filename), 'w+') as file:
             file.write(json.dumps(result))
 
