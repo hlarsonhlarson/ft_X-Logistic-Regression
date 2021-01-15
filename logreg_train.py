@@ -51,7 +51,7 @@ class LogReg:
         m = X.shape[1]
         g = np.dot(theta.T,X) + b
         h = self.sigmoid(g)
-        cost = (-1/m) * np.sum(Y * np.log(h) + (1 - Y) * np.log(1 - h))
+        cost = (1/m) * np.sum(np.dot(-Y.T , np.log(h)) - np.dot((1 - Y).T , np.log(1 - h)))
         dtheta = (1 / m) * np.dot(X, (h - Y).T)
         db = (1 / m) * np.sum(h - Y)
 
@@ -67,7 +67,7 @@ class LogReg:
             grads, cost = self.propagate(theta, b, X, Y)
 
             dtheta = grads["dtheta"]
-            db= grads["db"]
+            db = grads["db"]
 
             theta = theta - lr * dtheta
             b = b - lr * db
@@ -81,22 +81,29 @@ class LogReg:
         return params, grads, cost
 
     def save_coefficients(self, filename='coefficients.json', folder='data'):
-        print(self.theta)
         self.theta = self.theta / np.mean(self.std)
-        self.b = self.b - self.theta * np.mean(self.mean)/np.mean(self.std)
-        result = {'b': self.b.tolist(), 'theta': self.theta.tolist()}
+        self.b = np.mean(self.b - self.theta * np.mean(self.mean)/np.mean(self.std))
+        self.theta = self.theta.tolist()
+        self.theta = [float(x[0]) for x in self.theta]
+        print(self.theta)
+        self.b = self.b.tolist()
+        result = {'b': self.b, 'theta': self.theta}
+        print('HI')
+        print(type(self.theta), type(self.b))
+        print('HI')
         with open(os.path.join(filename), 'w+') as file:
             file.write(json.dumps(result))
 
     def model(self, X, Y, lr, num_iterations=100000, visu=0):
         theta, b = self.init_with_zeroes(X.shape[0])
         parameters, grads, costs = self.optimize(theta, b, X, Y, num_iterations, lr)
-        print(self.theta)
-        #self.save_coefficients()
+        self.theta = parameters['theta']
+        self.b = parameters['b']
+        self.save_coefficients()
 
 if __name__ == '__main__':
     if len(argv) != 2:
         print('Incorrect input. Usage: python3 logreg.py "{your expression}"')
         exit(1)
     log_reg = LogReg(argv[1])
-    log_reg.model(log_reg.df, log_reg.Y, 0.01)
+    log_reg.model(log_reg.df, log_reg.Y, 0.01, num_iterations=3)
