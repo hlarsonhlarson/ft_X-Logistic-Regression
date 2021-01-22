@@ -3,19 +3,23 @@ import pandas as pd
 from sys import argv
 import os
 import json
+from pathlib import Path
+import matplotlib.pyplot as plt
+from config import MY_FEATURES, saving_file, saving_folder, houses_filename
 
-
-MY_FEATURES = ["Herbology", "Ancient Runes", "Astronomy", "Charms", "Defense Against the Dark Arts"]
 
 class LogReg:
 
     def __init__(self, filename):
+
+        self.costs = None
         self.mean = None
         self.std = None
         self.df = pd.read_csv(filename)
         self.df = self.df.dropna()
         self.Y = self.df['Hogwarts House']
         self.house_names = self.Y.unique()
+
         self.df = self.df[MY_FEATURES]
         self.df = self.normalize_data(self.df)
 
@@ -27,12 +31,20 @@ class LogReg:
         self.df = self.df.reshape(self.df.shape[0], -1).T
         self.Y = self.Y.reshape(self.Y.shape[0], -1).T
 
-        self.theta = None
-        self.b = None
+        self.thetas = []
+        self.bs = []
+
 
     def convert_housenames(self):
-        self.Y = [np.float128(np.where(self.house_names == x)[0][0] + 1) for x in self.Y]
-        self.Y = np.array(self.Y)
+        self.Y = np.asarray([np.float128(np.where(self.house_names == x)[0][0] + 1) for x in self.Y]).reshape(-1, 1)
+
+
+        self.Y_1 = (self.Y.astype(int) == 1).astype(int).reshape(-1,1)
+        self.Y_2 = (self.Y.astype(int) == 2).astype(int).reshape(-1,1)
+        self.Y_3 = (self.Y.astype(int) == 3).astype(int).reshape(-1,1)
+        self.Y_4 = (self.Y.astype(int) == 4).astype(int).reshape(-1,1)
+
+        self.y_s = [self.Y_1, self.Y_2, self.Y_3, self.Y_4]
 
     def normalize_data(self, data):
         self.mean = data.mean()
@@ -49,16 +61,20 @@ class LogReg:
 
     def propagate(self, theta, b, X, Y):
         m = X.shape[1]
-        g = np.dot(theta.T,X) + b
+
+        g = (np.dot(theta.T,X) + b).T
         h = self.sigmoid(g)
-        cost = (1/m) * np.sum(np.dot(-Y.T , np.log(h)) - np.dot((1 - Y).T , np.log(1 - h)))
-        dtheta = (1 / m) * np.dot(X, (h - Y).T)
+
+        cost = (1/m) * np.sum(np.dot(-Y.T , np.log(h)) - 
+        np.dot((1 - Y).T , np.log(1 - h)))
+
+        dtheta = (1 / m) * np.dot(X, (h - Y))
         db = (1 / m) * np.sum(h - Y)
 
         cost = np.squeeze(cost)
-
         grads = {"dtheta": dtheta,
                  "db": db}
+
         return grads, cost
 
     def optimize(self, theta, b, X, Y, num_iterations, lr):
@@ -71,35 +87,64 @@ class LogReg:
 
             theta = theta - lr * dtheta
             b = b - lr * db
-
-            if i % 100 == 0:
-                costs.append(cost)
+            costs.append(cost)
         params = {"theta": theta,
                   "b": b}
         grads = {"dtheta": dtheta,
                  "db": db}
-        return params, grads, cost
+        return params, grads, costs
 
-    def save_coefficients(self, filename='coefficients.json', folder='data'):
-        self.theta = self.theta / np.mean(self.std)
-        self.b = np.mean(self.b - self.theta * np.mean(self.mean)/np.mean(self.std))
-        self.theta = self.theta.tolist()
-        self.theta = [float(x[0]) for x in self.theta]
-        self.b = float(self.b.tolist())
-        result = {'b': self.b, 'theta': self.theta}
-        with open(os.path.join(filename), 'w+') as file:
-            file.write(json.dumps(result))
+    def save_coefficients(self, filename=saving_file):
+        results = []
+        for theta, b in zip(self.thetas, self.bs):
+          results.append({'b': str(b), 'theta': [str(th[0]) for th in theta.tolist()]})
 
-    def model(self, X, Y, lr, num_iterations=100000, visu=0):
+        with open(filename, 'w') as file:
+            file.write(json.dumps(results))
+        with open(houses_filename, 'w') as file:
+            file.write(json.dumps(self.house_names.tolist()))
+
+    def model(self, X, Y, lr=0.001, num_iterations=10000, visu=0):
         theta, b = self.init_with_zeroes(X.shape[0])
-        parameters, grads, costs = self.optimize(theta, b, X, Y, num_iterations, lr)
-        self.theta = parameters['theta']
-        self.b = parameters['b']
+        parametrs = []
+        grads = []
+        costs = []
+        for i,y in enumerate(self.y_s):
+          parameter, grad, cost = self.optimize(theta, b, X, y, num_iterations, lr)
+          parametrs.append(parameter)
+
+          grads.append(grad)
+          costs.append(cost)
+
+          self.thetas.append(parameter['theta'])
+          self.bs.append(parameter['b'])
+          if visu:
+              self.show_costs(cost)
+
+        if visu:
+            plt.show()
         self.save_coefficients()
+        self.costs = costs
+      
+    def show_costs(self, costs):
+          plt.plot([i for i in range(len(costs))],costs)
+          plt.xlabel('iterations')
+          plt.ylabel('cost')
+
 
 if __name__ == '__main__':
-    if len(argv) != 2:
-        print('Incorrect input. Usage: python3 logreg.py "{your expression}"')
-        exit(1)
+    if len(argv) != 2 and len(argv) != 3:
+        print('Usage: python3 train.py {training_filename}')
+        print('or python3 train.py {training_filename} -v')
+        exit()
+    try:
+        file_tmp = pd.read_csv(argv[1])
+    except:
+        print('No file')
+        exit()
+    if len(argv) == 3 and argv[2] == '-v':
+        visualize = 1
+    else:
+        visualize = 0
     log_reg = LogReg(argv[1])
-    log_reg.model(log_reg.df, log_reg.Y, 0.01, num_iterations=3)
+    log_reg.model(log_reg.df, log_reg.Y, visu=visualize)

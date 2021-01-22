@@ -14,7 +14,6 @@ def my_mean(x):
             length -= 1
     return summary / length
 
-
 def my_std(x):
     m = my_mean(x)
     ans = 0
@@ -24,7 +23,7 @@ def my_std(x):
             length -= 1
         else:
             ans += (elem - m)**2
-    ans /= length
+    ans /= length - 1
     return np.sqrt(ans)
 
 
@@ -73,7 +72,7 @@ if __name__ == '__main__':
     counts = [my_count(df[column]) for column in df]
     means = [my_mean(df[column]) for column in df]
     stds = [my_std(df[column]) for column in df]
-    mins = [my_mean(df[column]) for column in df]
+    mins = [my_min(df[column]) for column in df]
     pers_25 = [my_percentile(df[column], 0.25) for column in df]
     pers_50 = [my_percentile(df[column], 0.50) for column in df]
     pers_75 = [my_percentile(df[column], 0.75) for column in df]
